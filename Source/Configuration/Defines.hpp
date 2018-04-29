@@ -10,7 +10,7 @@
 #pragma warning(disable: 4100 4307)
 
 // Identifying name for this module.
-#define MODULENAME "Registration"
+#define MODULENAME "Backend"
 
 // Fixup for Visual Studio 2015 no longer defining this.
 #if !defined(_DEBUG) && !defined(NDEBUG)
@@ -38,4 +38,5 @@
 // Remove some Windows annoyance.
 #if defined(_WIN32)
     #define _CRT_SECURE_NO_WARNINGS
+    #define WIN32_LEAN_AND_MEAN
 #endif

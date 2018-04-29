@@ -8,6 +8,10 @@
 
 #pragma once
 
+// The configuration settings.
+#include "Configuration/Defines.hpp"
+#include "Configuration/Macros.hpp"
+
 // Standard libraries.
 #include <unordered_map>
 #include <string_view>
