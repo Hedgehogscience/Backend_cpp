@@ -10,12 +10,14 @@ set(EXECUTABLE_OUTPUT_PATH ${Backend_cpp_SOURCE_DIR}/Bin)
 set(LIBRARY_OUTPUT_PATH ${Backend_cpp_SOURCE_DIR}/Bin)
 
 # Separate release and debugbuilds output and dependencies.
-mark_as_advanced(CMAKE_IMPORT_LIBRARY_SUFFIX "d")
+mark_as_advanced(CMAKE_IMPORT_LIBRARY_SUFFIX CMAKE_DEBUG_POSTFIX)
+set(CMAKE_DEBUG_POSTFIX "d")
 
 # Extra libraries to be linked.
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 	set(EXTRA_LIBS ${EXTRA_LIBS} dl pthread)
 else()
+	set(EXTRA_LIBS ${EXTRA_LIBS} Psapi Userenv Iphlpapi)
 endif()
 
 # Extra flags for compiling and linking.
@@ -35,8 +37,10 @@ endif()
 # Use static VC runtimes when releasing on Windows.
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     foreach(flag_var
-            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+			CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE 
+			CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+			CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
         if(${flag_var} MATCHES "/MD")
             string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
         endif()
@@ -55,8 +59,19 @@ else()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -g")
 endif()
 
+# Common library includes.
+find_package(OPENSSL)
+find_library(UWS_LIBRARY uWS)
+find_library(UV_LIBRARY libuv)
+find_library(ZLIB_LIBRARY zlib)
+find_path(UV_INCLUDE_DIR uv.h)
+find_path(UWS_INCLUDE_DIR uWS/uWS.h)
+include_directories(${UV_INCLUDE_DIR})
+include_directories(${UWS_INCLUDE_DIR})
+include_directories(${OPENSSL_INCLUDE_DIR})
+
 # Registration service.
 file(GLOB_RECURSE REGISTRATION_SOURCES "Source/Registration/*.cpp")
 add_executable(Registration ${REGISTRATION_SOURCES})
-target_link_libraries(Registration ${EXTRA_LIBS})
 set_target_properties(Registration PROPERTIES COMPILE_FLAGS "${EXTRA_CMPFLAGS}" LINK_FLAGS "${EXTRA_LNKFLAGS}")
+target_link_libraries(Registration ${EXTRA_LIBS} ${UWS_LIBRARY} ${OPENSSL_LIBRARIES} ${UV_LIBRARY} ${ZLIB_LIBRARY})

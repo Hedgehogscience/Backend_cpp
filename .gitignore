@@ -65,3 +65,4 @@ Bin
 *.licenseheader
 *.log
 *.db
+/CMakeSettings.json
