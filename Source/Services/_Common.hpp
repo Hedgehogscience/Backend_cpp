@@ -11,13 +11,11 @@
 namespace Common
 {
     // Service ports that nginx forwards to.
-    enum class Serverports
+    enum class Serviceports
     {
         Developer = 28000,
-        Frontpage = 28001,
-        Forumpost = 28002,
-        Forumthread = 28003,
-        Accountinformation = 28004,
-        Accountregistration = 28005,
+        Account = 28001,        
+        Profile = 28002,
+        Forum = 28003,
     };
 }

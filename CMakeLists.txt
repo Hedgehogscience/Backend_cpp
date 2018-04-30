@@ -71,7 +71,17 @@ set(SERVICE_INCS ${SERVICE_INCS} ${INC_EVPP})
 set(SERVICE_LIBS ${SERVICE_LIBS} ${LIB_EV} ${LIB_EVC} ${LIB_EVPP} ${LIB_GL} ${LIB_GF} ${LIB_EVE})
 include_directories(${SERVICE_INCS})
 
-# Accountregistration service.
-add_executable(Accountregistration "Source/Services/Accountregistration.cpp")
-target_link_libraries(Accountregistration ${EXTRA_LIBS} ${SERVICE_LIBS})
-set_target_properties(Accountregistration PROPERTIES COMPILE_FLAGS "${EXTRA_CMPFLAGS}" LINK_FLAGS "${EXTRA_LNKFLAGS}")
+# Account service: Login, Verify, Register
+add_executable(Accountservice "Source/Services/Accountservice.cpp")
+target_link_libraries(Accountservice ${EXTRA_LIBS} ${SERVICE_LIBS})
+set_target_properties(Accountservice PROPERTIES COMPILE_FLAGS "${EXTRA_CMPFLAGS}" LINK_FLAGS "${EXTRA_LNKFLAGS}")
+
+# Profile service: Avatar, Fump
+add_executable(Profileservice "Source/Services/Profileservice.cpp")
+target_link_libraries(Profileservice ${EXTRA_LIBS} ${SERVICE_LIBS})
+set_target_properties(Profileservice PROPERTIES COMPILE_FLAGS "${EXTRA_CMPFLAGS}" LINK_FLAGS "${EXTRA_LNKFLAGS}")
+
+# Forum service: Verify, Thread, Post, Tag
+add_executable(Forumservice "Source/Services/Forumservice.cpp")
+target_link_libraries(Forumservice ${EXTRA_LIBS} ${SERVICE_LIBS})
+set_target_properties(Forumservice PROPERTIES COMPILE_FLAGS "${EXTRA_CMPFLAGS}" LINK_FLAGS "${EXTRA_LNKFLAGS}")

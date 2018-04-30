@@ -1,12 +1,12 @@
 /*
     Initial author: Convery (tcn@ayria.se)
-    Started: 29-04-2018
+    Started: 30-04-2018
     License: MIT
     Notes:
-        Provides account registration.
+        Provides forum services.
 */
 
-#define MODULENAME "Accountregistration"
+#define MODULENAME "Forumservice"
 
 #include "_Common.hpp"
 #include "../Stdinclude.hpp"
@@ -49,14 +49,14 @@ int main(int argc, const char **argv)
     Server.RegisterDefaultHandler(&Servelandingpage);
 
     // Start the server.
-    Server.Init(static_cast<int>(Common::Serverports::Accountregistration));
+    Server.Init(static_cast<int>(Common::Serviceports::Forum));
     Server.Start();
 
     // Loop until terminated by the dev.
     while (true) 
     {
         // Reload the HTML from disk.
-        if (auto Filehandle = std::fopen("Accountregistration.html", "rb"))
+        if (auto Filehandle = std::fopen("Forumservice.html", "rb"))
         {
             std::fseek(Filehandle, 0, SEEK_END);
             auto Length = std::ftell(Filehandle);
