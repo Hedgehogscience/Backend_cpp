@@ -12,16 +12,58 @@
 #include "../Stdinclude.hpp"
 #include <evpp/http/http_server.h>
 
-// Readable registrationpage.
-std::string DefaultHTML = "<HTML><body><h1>Error =(</h1></body></HTML>";
-std::unique_ptr<std::string> CurrentHTMLPage{ &DefaultHTML };
-std::unique_ptr<std::string> PreviousHTMLPage;
-
-// Landingpage request.
-void Servelandingpage(evpp::EventLoop *Loop, const evpp::http::ContextPtr &Context, const evpp::http::HTTPSendResponseCallback &Callback)
+// Keep the common strings on the same cacheline.
+enum class ResponseID { Sucess, Invalid, Failure, Duplicate, Usage, Max};
+std::string Responses[static_cast<size_t>(ResponseID::Max)] =
 {
-    Context->AddResponseHeader("content-type", "text/html; charset=UTF-8");
-    Callback(*CurrentHTMLPage);
+    "{ \"Result\": \"Sucess\" }",
+    "{ \"Result\": \"Invalid\" }",
+    "{ \"Result\": \"Failure\" }",
+    "{ \"Result\": \"Duplicate\" }",
+    "{ \"Endpoints\": [ \"/Account/Login\", \"/Account/Verify\", \"/Account/Register\" ] }"
+};
+
+// Prerendered HTML pages.
+enum class PageID { Login, Max};
+std::unique_ptr<std::string> Renderedpages[static_cast<size_t>(PageID::Max)];
+
+// Unhandled request return usage info.
+void Unhandledrequest(evpp::EventLoop *Loop, const evpp::http::ContextPtr &Context, const evpp::http::HTTPSendResponseCallback &Callback)
+{
+    Context->AddResponseHeader("content-type", "application/json");
+    Callback(Responses[static_cast<size_t>(ResponseID::Usage)]);
+}
+
+// Return the authentication page.
+void Loginrequest(evpp::EventLoop *Loop, const evpp::http::ContextPtr &Context, const evpp::http::HTTPSendResponseCallback &Callback)
+{
+    Context->AddResponseHeader("content-type", "text/html");
+    Callback((*Renderedpages[static_cast<size_t>(PageID::Login)]));
+}
+
+// Verify that a key exists in the database.
+void Verificationrequest(evpp::EventLoop *Loop, const evpp::http::ContextPtr &Context, const evpp::http::HTTPSendResponseCallback &Callback)
+{
+    Context->AddResponseHeader("content-type", "application/json");
+
+    auto Publickey = Context->GetQuery("key");
+    if(!Base64::Validate(Publickey)) return Callback(Responses[static_cast<size_t>(ResponseID::Invalid)]);
+
+    bool Databaseresult{};
+    /* TODO(Convery): Query the database */
+
+    if(Databaseresult) return Callback(Responses[static_cast<size_t>(ResponseID::Sucess)]);
+    else return Callback(Responses[static_cast<size_t>(ResponseID::Failure)]);
+}
+
+// Register the new key.
+void Registrationrequest(evpp::EventLoop *Loop, const evpp::http::ContextPtr &Context, const evpp::http::HTTPSendResponseCallback &Callback)
+{
+    
+
+
+    Context->AddResponseHeader("content-type", "application/json");
+    Callback(Responses[static_cast<size_t>(ResponseID::Invalid)]);
 }
 
 // Start the server.
@@ -39,14 +81,16 @@ int main(int argc, const char **argv)
 
     // Initialize winsock if we are on Windows.
     #if defined(_WIN32)
-    WSAData WD;
-    WSAStartup(1, &WD);
+    WSAData WD; WSAStartup(MAKEWORD(2, 2), &WD);
     #endif
 
     // Create the new server.
     evpp::http::Server Server(Threadcount);
-    Server.SetThreadDispatchPolicy(evpp::ThreadDispatchPolicy::kIPAddressHashing);
-    Server.RegisterDefaultHandler(&Servelandingpage);
+    Server.RegisterDefaultHandler(&Unhandledrequest);    
+    Server.RegisterHandler("/Account/Login", Loginrequest);
+    Server.RegisterHandler("/Account/Verify", Verificationrequest);
+    Server.RegisterHandler("/Account/Register", Registrationrequest);
+    Server.SetThreadDispatchPolicy(evpp::ThreadDispatchPolicy::kRoundRobin);
 
     // Start the server.
     Server.Init(static_cast<int>(Common::Serviceports::Account));
@@ -55,20 +99,27 @@ int main(int argc, const char **argv)
     // Loop until terminated by the dev.
     while (true) 
     {
-        // Reload the HTML from disk.
-        if (auto Filehandle = std::fopen("Accountservice.html", "rb"))
+        static auto Readfile = [](std::string Filename) -> std::string 
         {
-            std::fseek(Filehandle, 0, SEEK_END);
-            auto Length = std::ftell(Filehandle);
-            std::fseek(Filehandle, 0, SEEK_SET);
+            if (auto Filehandle = std::fopen(Filename.c_str(), "rb"))
+            {
+                std::fseek(Filehandle, 0, SEEK_END);
+                auto Length = std::ftell(Filehandle);
+                std::fseek(Filehandle, 0, SEEK_SET);
 
-            auto Buffer = std::make_unique<char[]>(Length);
-            std::fread(Buffer.get(), Length, 1, Filehandle);
-            std::fclose(Filehandle);
+                auto Buffer = std::make_unique<char[]>(Length + 1);
+                std::fread(Buffer.get(), Length, 1, Filehandle);
+                std::fclose(Filehandle);
 
-            PreviousHTMLPage = std::make_unique<std::string>(Buffer.get());
-            CurrentHTMLPage.swap(PreviousHTMLPage);
-        }
+                return std::string(std::move(Buffer.get()));
+            }
+
+            return "";
+        };
+
+        // Update the pages periodically.
+       auto Locallogin = std::make_unique<std::string>(Readfile("Loginpage.html"));
+       Renderedpages[static_cast<size_t>(PageID::Login)].swap(Locallogin);
 
         std::this_thread::sleep_for(std::chrono::minutes(5));
         /* TODO(Convery): Do some logging here. */

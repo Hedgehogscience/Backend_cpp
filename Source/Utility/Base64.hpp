@@ -13,7 +13,7 @@ namespace Base64
 {
     namespace Internal
     {
-        static constexpr char Table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        static constexpr char Table[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         static constexpr char Reversetable[128] = {
         64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
         64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -33,7 +33,7 @@ namespace Base64
         uint32_t Accumulator = 0;
         int32_t Bits = 0;
 
-        for (auto &Item : Input)
+        for (const auto &Item : Input)
         {
             Accumulator = (Accumulator << 8) | (Item & 0xFF);
             Bits += 8;
@@ -58,7 +58,7 @@ namespace Base64
         uint32_t Accumulator = 0;
         int32_t Bits = 0;
 
-        for (auto &Item : Input)
+        for (const auto &Item : Input)
         {
             if (Item == '=') continue;
 
@@ -73,5 +73,19 @@ namespace Base64
         }
 
         return Result;
+    }
+    inline bool Validate(std::string_view Input)
+    {
+        for (const auto &Item : Input)
+        {
+            if (Item >= 'A' && Item <= 'Z') continue;
+            if (Item >= 'a' && Item <= 'z') continue;
+            if (Item >= '/' && Item <= '9') continue;
+            if (Item == '=') continue;
+            if (Item == '+') continue;
+            return false;
+        }
+
+        return Input.size();
     }
 }
